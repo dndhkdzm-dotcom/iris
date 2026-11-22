@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IRIS 방탈출</title>
+<style>
+/* 레이아웃: 폰 세로 한 열. 배지·스토리 → 타이머 카드 → 로고 영역 → 힌트 카드. 모서리를 사선으로 자른 카드. */
+:root{
+  --bg0:#04040a;--bg1:#0a0720;--fill:#0b0920;--fill2:#06050f;
+  --line:#6b3fe0;--line2:#2d2a9a;--v300:#d6c4ff;--v400:#a77dff;--v500:#8b5cff;--v600:#5b2fd0;--v700:#3a1aa8;
+  --ink:#e6dcff;--mut:#9d86d6;--dim:#6f5aa8;--hot:#ff3d6e;
+  --f-disp:"Black Han Sans","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-tech:"sans-serif-condensed","Roboto Condensed","Noto Sans KR",system-ui,sans-serif;
+  color-scheme:dark;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*:before,*:after{box-sizing:border-box}
+html,body{margin:0}
+body{
+  min-height:100dvh;position:relative;overflow-x:hidden;color:var(--ink);font:500 15px/1.5 var(--f-body);
+  background-color:var(--bg0);
+  background-image:
+    radial-gradient(ellipse at 50% 58%,rgba(74,31,208,.30) 0,rgba(74,31,208,0) 60%),
+    repeating-linear-gradient(-35deg,rgba(139,92,255,.055) 0 1.5px,transparent 1.5px 9px),
+    linear-gradient(160deg,#05050c 0%,#0a0720 55%,#03030a 100%);
+  -webkit-tap-highlight-color:transparent;
+}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.45;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .6 0 0 0 0 .5 0 0 0 0 1 0 0 0 .5 -.14'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;box-shadow:inset 0 0 120px 30px rgba(0,0,0,.65)}
+button{font-family:inherit;color:inherit}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
+
+/* 모서리를 자른 면: 테두리는 바깥 배경색, 안쪽은 ::before */
+.cut{--c:18px;position:relative;isolation:isolate;background:var(--line);
+  clip-path:polygon(0 0,calc(100% - var(--c)) 0,100% var(--c),100% 100%,var(--c) 100%,0 calc(100% - var(--c)))}
+.cut::before{content:"";position:absolute;inset:1.5px;z-index:-1;background:var(--fill-bg,var(--fill));
+  clip-path:polygon(0 0,calc(100% - var(--c) + 1px) 0,100% calc(var(--c) - 1px),100% 100%,calc(var(--c) - 1px) 100%,0 calc(100% - var(--c) + 1px))}
+.glow{filter:drop-shadow(0 6px 16px rgba(74,31,208,.38))}
+button.cut{cursor:pointer;border:0;padding:0}
+button.cut:focus-visible{--line:#fff;outline:0}
+
+.wrap{position:relative;z-index:2;min-height:100dvh;display:flex;flex-direction:column;align-items:center;
+  padding-block:16px 26px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap.blur{filter:blur(12px);pointer-events:none;user-select:none}
+
+.admbtn{--c:11px;--fill-bg:rgba(11,9,32,.9);align-self:flex-end;display:flex;align-items:center;gap:7px;padding:7px 14px 7px 12px!important;
+  font:900 12px var(--f-body);letter-spacing:.06em;color:var(--ink)}
+.admbtn i{display:block;width:13px;height:9px;background:linear-gradient(var(--v400) 0 2px,transparent 2px 4px,var(--v400) 4px 6px,transparent 6px 7px,var(--v400) 7px 9px);clip-path:none}
+.admbtn i{background:
+  linear-gradient(var(--v400),var(--v400)) 0 0/13px 2px no-repeat,
+  linear-gradient(var(--v400),var(--v400)) 0 4px/9px 2px no-repeat,
+  linear-gradient(var(--v400),var(--v400)) 0 8px/13px 2px no-repeat;height:10px}
+.admbtn:active{translate:0 2px}
+
+.badge{--c:12px;--line:var(--v500);--fill-bg:var(--v700);margin-top:14px;display:inline-flex;align-items:center;gap:9px;padding:6px 22px 6px 14px;
+  font:900 12.5px var(--f-body);letter-spacing:.14em;color:#f1eaff;filter:url(#lite)}
+.badge i{display:block;width:11px;height:12px;background:var(--v300);clip-path:polygon(35% 0,100% 0,65% 100%,0 100%)}
+.badge i+i{width:5px;opacity:.6;margin-left:-5px}
+.story{margin:16px 4px 0;max-width:420px;text-align:center;font:900 15px/1.6 var(--f-body);color:#d9ccf7;filter:url(#lite)}
+.story b{color:var(--v400);font-weight:900}
+
+.tcard{margin-top:18px;width:min(100%,440px)}
+.tc{--c:26px;--fill-bg:linear-gradient(180deg,#0f0b2c,#06050f);padding:16px 18px 20px;display:flex;flex-direction:column;align-items:center}
+.tc::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:repeating-linear-gradient(-35deg,rgba(139,92,255,.06) 0 1.5px,transparent 1.5px 9px);clip-path:inherit}
+.thead{width:100%;display:flex;align-items:center;gap:9px;padding-bottom:7px;position:relative;font:900 12.5px var(--f-body);letter-spacing:.18em;color:#cbbdf0;filter:url(#lite)}
+.thead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(139,92,255,.4)}
+.thead::before{content:"";position:absolute;left:0;bottom:-1px;width:56px;height:3px;background:var(--v500)}
+.thead i{display:block;width:10px;height:12px;background:var(--v500);clip-path:polygon(35% 0,100% 0,65% 100%,0 100%)}
+#timer{margin:6px 0 4px;width:min(100%,400px);line-height:0}
+#timer svg{display:block;width:100%;height:auto;overflow:visible}
+#timer .gh1,#timer .gh2{transition:none}
+#timer.glitch .gh1{translate:-5px 1px}
+#timer.glitch .gh2{translate:4px -2px}
+#timer.low{animation:pulse 1s steps(2,end) infinite}
+@keyframes pulse{50%{opacity:.82}}
+.segs{width:100%;display:flex;gap:2px;margin:2px 0 14px;filter:url(#lite)}
+.segs i{flex:1;height:11px;background:var(--v500);clip-path:polygon(30% 0,100% 0,70% 100%,0 100%)}
+.segs i.off{opacity:.16}
+.segs.low i:not(.off){background:var(--hot)}
+#start{--c:14px;--line:#b79bff;--fill-bg:linear-gradient(135deg,#6a35e8,#1d0e5e);min-width:200px;padding:11px 34px!important;
+  font:900 21px var(--f-disp);letter-spacing:.22em;text-indent:.22em;color:#fff;filter:url(#lite)}
+#start span{font:800 16px var(--f-tech);letter-spacing:.3em;color:#ddd0ff}
+#start:active{translate:0 2px}
+#running{min-width:200px;padding:12px 24px;text-align:center;font:800 13px var(--f-tech);letter-spacing:.3em;color:var(--v400);border:1.5px dashed var(--line2)}
+#running:before{content:"";display:inline-block;width:8px;height:8px;margin-right:10px;background:var(--hot);animation:blink 1s steps(2,end) infinite}
+@keyframes blink{50%{opacity:.2}}
+
+.logoarea{flex:1 1 auto;min-height:150px;width:100%;display:flex;align-items:center;justify-content:center;padding:6px 0}
+.logoarea img{display:block;width:min(92%,420px);max-height:100%;height:auto;opacity:.92;filter:drop-shadow(0 8px 24px rgba(91,47,208,.5))}
+
+.hintbox{--c:22px;--fill-bg:linear-gradient(180deg,#0f0b2c,#06050f);width:min(100%,380px);padding:18px 12px 16px!important;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink)}
+.hintbox:active{translate:0 2px}
+.hintbox .dia{width:34px;height:34px;display:grid;place-items:center;background:var(--v700);border:1.5px solid var(--v400);rotate:45deg;margin-bottom:8px}
+.hintbox .dia b{rotate:-45deg;font:800 18px var(--f-tech);color:#f1eaff}
+.hintbox .ht{font:900 32px/1.1 var(--f-disp);letter-spacing:.3em;text-indent:.3em;color:var(--v300);filter:url(#lite)}
+.hintbox .hc{font:900 12px var(--f-body);letter-spacing:.05em;color:var(--mut)}
+.hintbox .hc b{font:800 17px var(--f-tech);color:#e4d6ff}
+.foot{margin-top:16px;font:800 10px var(--f-tech);letter-spacing:.5em;text-indent:.5em;color:var(--dim)}
+
+/* 대화상자 */
+.ov{position:fixed;inset:0;z-index:10;background:rgba(2,2,10,.74);display:none;align-items:center;justify-content:center;
+  padding:18px max(18px,env(safe-area-inset-right,0px)) 18px max(18px,env(safe-area-inset-left,0px));backdrop-filter:blur(4px)}
+.ov.on{display:flex}
+.box{--c:20px;width:100%;max-width:350px;padding:22px;text-align:center;filter:none}
+.boxw{filter:drop-shadow(0 12px 34px rgba(74,31,208,.5));width:100%;display:flex;justify-content:center}
+.box h2{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 0 14px;font:900 21px var(--f-disp);letter-spacing:.12em;color:var(--v300)}
+.box h2 i{display:block;width:10px;height:14px;background:var(--v500);clip-path:polygon(35% 0,100% 0,65% 100%,0 100%)}
+.box p{margin:0 0 18px;font:900 17px/1.55 var(--f-body)}
+input,textarea{color:var(--ink);font-family:var(--f-body)}
+.box input,#eform input,#eform textarea{width:100%;font:800 20px var(--f-tech);text-align:center;letter-spacing:.3em;padding:12px;margin:0 0 8px;border-radius:0;border:1.5px solid var(--line2);background:#07061a}
+.box input:focus,#eform textarea:focus{outline:0;border-color:var(--v400);background:#0b0925}
+.box input::placeholder{color:#5a4a8c;letter-spacing:.1em}
+.err{min-height:20px;margin-bottom:8px;font:700 13px var(--f-body);color:var(--hot)}
+.row{display:flex;gap:10px}
+.row button,.nav button{flex:1;padding:11px;font:900 17px var(--f-disp);letter-spacing:.12em;cursor:pointer;border:1.5px solid var(--line2);background:#0b0925;color:var(--v300);border-radius:0;clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,9px 100%,0 calc(100% - 9px))}
+.row button.ok{background:linear-gradient(135deg,#6a35e8,#2a1280);border-color:var(--v400);color:#fff}
+.row button:active,.nav button:active{translate:0 2px}
+.row button:focus-visible,.nav button:focus-visible,.admbtn:focus-visible,.tabs button:focus-visible{outline:2px solid #fff;outline-offset:-3px}
+.box .lnk{display:block;margin:14px auto 0;background:none;border:0;color:var(--dim);font:700 12px var(--f-body);letter-spacing:.1em;text-decoration:underline;cursor:pointer;padding:6px}
+#gate{z-index:40;background:rgba(2,2,10,.5)}
+#gate .logo{width:230px;margin:-4px auto 6px;display:block}
+.gs{margin:0 0 14px!important;font:700 14px/1.6 var(--f-body)!important;color:var(--mut)}
+.qrow{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.qrow .ql{font:800 30px var(--f-tech);color:var(--v400)}
+.qrow input{margin:0!important;text-align:left!important;letter-spacing:.2em!important}
+
+/* 힌트 보기 */
+.view{--c:22px;--fill-bg:#0a0820;width:100%;max-width:560px;height:min(86dvh,760px);display:flex;flex-direction:column;overflow:hidden}
+.vh{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;font:900 21px var(--f-disp);letter-spacing:.1em;color:var(--v300);border-bottom:1px dashed var(--line2)}
+.vh button{background:none;border:0;color:var(--v400);font:900 30px/1 var(--f-tech);cursor:pointer;padding:0 4px}
+.page{flex:1;min-height:0;overflow:auto;padding:10px 20px 14px;text-align:center}
+.pin{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.page img{max-width:100%;max-height:46dvh;object-fit:contain;border:1.5px solid var(--line)}
+.ph{width:100%;aspect-ratio:4/3;border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--mut);font-weight:700;padding:12px}
+.ans{margin:12px 0 0;padding:10px 22px;font:800 28px var(--f-tech);letter-spacing:.08em;color:#fff;border:1.5px solid var(--v500);background:var(--v700)}
+.exp{font:500 17px/1.75 var(--f-body);white-space:pre-wrap;margin:0}
+.lb{margin:14px 0 8px;font:800 12px var(--f-tech);letter-spacing:.3em;text-indent:.3em;color:#fff;background:var(--v600);padding:3px 14px;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+.nav{display:flex;gap:10px;padding:10px 16px 16px;align-items:center}
+.nav button:disabled{opacity:.3}
+.dots{font:800 14px var(--f-tech);color:var(--v400);min-width:54px;text-align:center}
+#himg,#aimg{width:100%;display:flex;justify-content:center;margin-top:8px}
+#aimg:empty{display:none}
+
+/* 문제 설정 */
+#edt .box{max-width:460px;max-height:92dvh;overflow:auto;text-align:left;--fill-bg:#0a0820}
+#edt h2{justify-content:flex-start}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tabs button{min-width:40px;padding:8px;border:1.5px solid var(--line2);background:#0b0925;color:var(--mut);font:800 14px var(--f-tech);cursor:pointer;border-radius:0}
+.tabs button.on{background:var(--v600);border-color:var(--v400);color:#fff}
+#eform label{display:flex;flex-direction:column;gap:6px;font:700 13px var(--f-body);color:var(--mut);margin-bottom:10px}
+#eform textarea,#eform input{font:500 15px var(--f-body);text-align:left;letter-spacing:0;margin:0}
+#eform textarea{min-height:76px;resize:vertical;line-height:1.5}
+#eform input[type=file]{padding:10px;border-style:dashed;font-size:13px}
+.eprev{margin:-4px 0 12px;font:500 12px var(--f-body);color:var(--mut);display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.eprev img{max-width:100%;max-height:180px;border:1.5px solid var(--line)}
+.eprev button{padding:7px 12px;border:1.5px solid var(--line2);background:#0b0925;color:var(--v300);font:800 13px var(--f-body);cursor:pointer;border-radius:0}
+#emsg2{color:var(--v400)}
+#edt .row{position:sticky;bottom:-22px;background:#0a0820;padding:10px 0 2px;margin-top:4px}
+@media (prefers-reduced-motion:reduce){#timer.low,#running:before{animation:none}}
+</style>
+</head>
+<body>
+
+<svg class="defs" aria-hidden="true"><defs>
+  <linearGradient id="numG" x1="0" y1="0" x2="0" y2="96" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f4eeff"/><stop offset=".6" stop-color="#c4a8ff"/><stop offset="1" stop-color="#7a4dff"/></linearGradient>
+  <linearGradient id="numL" x1="0" y1="0" x2="0" y2="96" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff2f5"/><stop offset=".6" stop-color="#ff8aa6"/><stop offset="1" stop-color="#ff2d6b"/></linearGradient>
+  <filter id="grunge" x="-5%" y="-8%" width="110%" height="116%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="3" seed="4" result="w"/>
+    <feDisplacementMap in="SourceGraphic" in2="w" scale="2" xChannelSelector="R" yChannelSelector="G" result="r"/>
+    <feTurbulence type="fractalNoise" baseFrequency="1.5" numOctaves="2" seed="11" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 15 0 0 0 -4.1" result="sp"/>
+    <feComposite in="r" in2="sp" operator="in" result="s1"/>
+    <feTurbulence type="fractalNoise" baseFrequency="0.03 1.1" numOctaves="2" seed="23" result="sc"/>
+    <feColorMatrix in="sc" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 22 0 0 0 -6.5" result="scr"/>
+    <feComposite in="s1" in2="scr" operator="in"/>
+  </filter>
+  <filter id="lite" x="-5%" y="-10%" width="110%" height="120%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.12" numOctaves="2" seed="9" result="w"/>
+    <feDisplacementMap in="SourceGraphic" in2="w" scale="1.2" xChannelSelector="R" yChannelSelector="G" result="r"/>
+    <feTurbulence type="fractalNoise" baseFrequency="1.7" numOctaves="2" seed="5" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 15 0 0 0 -4.3" result="sp"/>
+    <feComposite in="r" in2="sp" operator="in"/>
+  </filter>
+  <clipPath id="gcl1"><rect x="-20" y="35" width="400" height="5"/></clipPath>
+  <clipPath id="gcl2"><rect x="-20" y="71" width="400" height="4"/></clipPath>
+</defs></svg>
+
+<div class="wrap">
+  <button class="admbtn cut" id="dk3" aria-label="관리자 설정"><i></i>관리자</button>
+  <div class="badge cut"><i></i><i></i>IRIS 음반 투자 설명회</div>
+  <div class="story">메인 PD가 쓰러졌다! 설명회까지 <b>40분</b>!<br>PD의 노트북을 열어 <b>음원 파일</b>을 전송하라!</div>
+
+  <div class="tcard glow"><div class="tc cut">
+    <div class="thead"><i></i>설명회까지 남은 시간</div>
+    <div id="timer" role="timer" aria-live="off"></div>
+    <div class="segs" id="segs" aria-hidden="true"></div>
+    <button class="cut" id="start">시작 <span>START</span></button>
+    <div id="running" hidden>COUNTDOWN</div>
+  </div></div>
+
+  <div class="logoarea"><img src="iris-logo.svg" alt="IRIS"></div>
+
+  <div class="glow" style="width:min(100%,380px)"><button class="hintbox cut" id="hintBtn" style="width:100%"><span class="dia"><b>?</b></span><span class="ht">힌트</span><span class="hc">확인한 힌트 <b id="hcnt">0</b>개</span></button></div>
+  <div class="foot">IRIS // 4 MEMBERS</div>
+</div>
+
+<div class="ov" id="qdlg"><div class="boxw"><div class="box cut"><h2><i></i>힌트 보기</h2>
+  <div class="qrow"><span class="ql">Q.</span><input id="qin" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="문제 번호"></div>
+  <div class="err" id="qerr"></div>
+  <div class="row"><button id="qno">취소</button><button class="ok" id="qok">확인</button></div>
+  <button class="lnk" id="qadm">관리자 설정</button></div></div></div>
+
+<div class="ov" id="edt"><div class="boxw"><div class="box cut"><h2><i></i>문제별 힌트 설정</h2>
+  <div class="tabs" id="etabs"></div>
+  <div id="eform"></div>
+  <div class="err" id="emsg2"></div>
+  <div class="row"><button id="ex2">닫기</button><button class="ok" id="esave">저장</button></div></div></div></div>
+
+<div class="ov" id="confirm"><div class="boxw"><div class="box cut">
+  <p id="cmsg"></p>
+  <div class="row"><button id="cno">취소</button><button class="ok" id="cyes">확인</button></div>
+</div></div></div>
+
+<div class="ov" id="viewer"><div class="boxw" style="max-width:560px"><div class="view cut">
+  <div class="vh"><span id="vt"></span><button id="vx" aria-label="닫기">×</button></div>
+  <div class="page" id="pg"></div>
+  <div class="nav"><button id="prev">‹ 이전</button><span class="dots" id="dots"></span><button id="next">다음 ›</button></div>
+</div></div></div>
+
+<div class="ov on" id="gate"><div class="boxw"><div class="box cut">
+  <img class="logo" src="iris-logo.svg" alt="IRIS">
+  <p class="gs">인증 코드를 입력하세요.</p>
+  <input id="gin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••">
+  <div class="err" id="gerr"></div>
+  <div class="row"><button class="ok" id="gok">확인</button></div></div></div></div>
+
+<div class="ov" id="adm"><div class="boxw"><div class="box cut"><h2><i></i>관리자 설정</h2>
+  <input id="ain" type="password" autocomplete="off" placeholder="관리자 코드">
+  <div class="err" id="aerr"></div>
+  <div class="row"><button id="acn">닫기</button><button class="ok" id="aok">확인</button></div></div></div></div>
+
+<script>
+/* ===================== 설정값 ===================== */
+var AUTH_CODE="9999";    /* 처음 인증 코드 */
+var RESET_ALL="9999";    /* 관리자 → 전체 초기화 */
+var SETUP_CODE="0000";   /* 관리자 → 문제별 힌트 설정 */
+var TOTAL=40*60*1000;
+var COUNT=10;
+
+/* ===================== 저장소 ===================== */
+var CFG_KEY="iris_cfg_v1",KEY="iris_state_v1";
+function defCfg(){var h=[];for(var i=0;i<COUNT;i++)h.push({hint:"",text:"",answer:""});return{hints:h}}
+var CFG=defCfg();
+try{var rc=JSON.parse(localStorage.getItem(CFG_KEY)||"null");if(rc&&rc.hints){for(var i=0;i<COUNT;i++)if(rc.hints[i])CFG.hints[i]=Object.assign(CFG.hints[i],rc.hints[i])}}catch(e){}
+function saveCfg(){try{localStorage.setItem(CFG_KEY,JSON.stringify(CFG))}catch(e){}}
+var S={start:0,viewed:[],auth:false};
+try{var raw=localStorage.getItem(KEY);if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+function idb(){return new Promise(function(ok,no){try{var r=indexedDB.open("iris-hub",1);r.onupgradeneeded=function(){r.result.createObjectStore("kv")};r.onsuccess=function(){ok(r.result)};r.onerror=function(){no(r.error)}}catch(e){no(e)}})}
+function idbPut(k,v){return idb().then(function(d){return new Promise(function(ok){var t=d.transaction("kv","readwrite");if(v)t.objectStore("kv").put(v,k);else t.objectStore("kv").delete(k);t.oncomplete=function(){ok()};t.onerror=function(){ok()};t.onabort=function(){ok()}})}).catch(function(){})}
+function idbGet(k){return idb().then(function(d){return new Promise(function(ok){var q=d.transaction("kv").objectStore("kv").get(k);q.onsuccess=function(){ok(q.result||null)};q.onerror=function(){ok(null)}})}).catch(function(){return null})}
+var imgCache={};
+function imgURL(key){if(key in imgCache)return Promise.resolve(imgCache[key]);return idbGet(key).then(function(b){imgCache[key]=b?URL.createObjectURL(b):"";return imgCache[key]})}
+function dropImg(key){if(imgCache[key]){try{URL.revokeObjectURL(imgCache[key])}catch(e){}}delete imgCache[key]}
+
+var $=function(i){return document.getElementById(i)};
+function openOv(id){$(id).classList.add("on")}
+function closeOv(id){$(id).classList.remove("on")}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+/* ===================== 각진 숫자 (직선·사선만) ===================== */
+var GP={"0":"M22 10H34L46 22V74L34 86H22L10 74V22Z","1":"M10 28L32 10V86","2":"M10 24L24 10H36L46 22V38L10 86H48",
+"3":"M10 12H44L28 46H34L46 58V74L34 86H10","4":"M36 86V10L8 62H50","5":"M46 10H14L10 46H34L46 58V74L34 86H10",
+"6":"M44 10H22L10 22V74L22 86H34L46 74V58L34 46H10","7":"M10 10H46L24 86",
+"8":"M22 10H34L44 20V34L34 46H22L12 34V20Z M22 46H34L46 58V74L34 86H22L10 74V58Z",
+"9":"M44 10H22L10 22V74L22 86H34L46 74V58L34 46H10"};
+function timerSVG(str,low){
+  var x=0,pos=[],i,c;
+  for(i=0;i<str.length;i++){c=str.charAt(i);pos.push([c,x]);x+=(c===":"?40:62)}
+  var W=x-(str.charAt(str.length-1)===":"?40:62)+56;
+  function layer(){var h="";for(var j=0;j<pos.length;j++){if(pos[j][0]===":")continue;
+    var d=GP[pos[j][0]];if(pos[j][0]==="9")h+='<path d="'+GP["6"]+'" transform="translate('+pos[j][1]+',0) rotate(180 28 48)"/>';else h+='<path d="'+d+'" transform="translate('+pos[j][1]+',0)"/>'}return h}
+  var L=layer(),colon="";
+  for(i=0;i<pos.length;i++)if(pos[i][0]===":")colon+='<rect x="'+(pos[i][1]+11)+'" y="26" width="18" height="18"/><rect x="'+(pos[i][1]+11)+'" y="52" width="18" height="18"/>';
+  var g1=low?"#8a1033":"#3a1a9a",g2=low?"#4a0d2a":"#1d2a8f",grad=low?"url(#numL)":"url(#numG)",att=' fill="none" stroke-width="16" stroke-linejoin="miter" stroke-miterlimit="2.2" stroke-linecap="butt"';
+  return '<svg viewBox="-14 -8 '+(W+34)+' 114" role="img" aria-label="'+str+'"><g transform="translate(6,0) skewX(-7)">'
+   +'<g class="gh1"><g transform="translate(-3.4,1.8)" opacity=".85" stroke="'+g1+'"'+att+'>'+L+'</g></g>'
+   +'<g class="gh2"><g transform="translate(2.6,-1.4)" opacity=".75" stroke="'+g2+'"'+att+'>'+L+'</g></g>'
+   +'<g filter="url(#grunge)"><g stroke="'+grad+'"'+att+'>'+L+'</g><g fill="'+grad+'">'+colon+'</g></g>'
+   +'<g clip-path="url(#gcl1)"><g transform="translate(4.5,0)" stroke="#d9c6ff"'+att+' opacity=".95">'+L+'</g></g>'
+   +'<g clip-path="url(#gcl2)"><g transform="translate(-5.5,0)" stroke="#8f5cff"'+att+' opacity=".95">'+L+'</g></g>'
+   +'</g></svg>';
+}
+
+/* ===================== 타이머 ===================== */
+var tEl=$("timer"),sBtn=$("start"),runEl=$("running"),segEl=$("segs"),lastStr="",lastLow=null,lastLit=-1;
+(function(){var h="";for(var i=0;i<40;i++)h+="<i></i>";segEl.innerHTML=h})();
+function fmt(ms){var t=Math.max(0,Math.ceil(ms/1000)),m=Math.floor(t/60),s=t%60;return(m<10?"0":"")+m+":"+(s<10?"0":"")+s}
+function showRunning(){var on=!!S.start;sBtn.hidden=on;runEl.hidden=!on}
+function tick(){
+  var str,low=false,lit=40;
+  if(!S.start){str=fmt(TOTAL)}
+  else{var left=S.start+TOTAL-Date.now();str=left<=0?"00:00":fmt(left);low=left<=5*60*1000;lit=Math.max(0,Math.min(40,Math.ceil(left/60000)))}
+  if(str!==lastStr||low!==lastLow){tEl.innerHTML=timerSVG(str,low);tEl.classList.toggle("low",low);lastStr=str;lastLow=low}
+  if(lit!==lastLit){var k=segEl.children;for(var i=0;i<40;i++)k[i].className=i<lit?"":"off";segEl.classList.toggle("low",low);lastLit=lit}
+  else segEl.classList.toggle("low",low);
+}
+sBtn.onclick=function(){if(S.start)return;S.start=Date.now();save();showRunning();tick()};
+showRunning();
+setInterval(tick,250);tick();
+/* 가끔 지직거리는 글리치 */
+setInterval(function(){tEl.classList.add("glitch");setTimeout(function(){tEl.classList.remove("glitch")},140)},5200);
+
+/* ===================== 인증 ===================== */
+var wrapEl=document.querySelector(".wrap");
+function applyAuth(){wrapEl.classList.toggle("blur",!S.auth);$("gate").classList.toggle("on",!S.auth);if(!S.auth)setTimeout(function(){$("gin").focus()},100)}
+function submitGate(){if($("gin").value===AUTH_CODE){S.auth=true;save();$("gin").value="";$("gerr").textContent="";applyAuth()}else{$("gerr").textContent="인증 코드가 올바르지 않습니다.";$("gin").select()}}
+$("gok").onclick=submitGate;
+$("gin").addEventListener("keydown",function(e){if(e.key==="Enter")submitGate()});
+applyAuth();
+
+/* ===================== 힌트 ===================== */
+function paint(){$("hcnt").textContent=S.viewed.length}
+paint();
+$("hintBtn").onclick=function(){$("qin").value="";$("qerr").textContent="";openOv("qdlg");setTimeout(function(){$("qin").focus()},100)};
+$("qin").addEventListener("input",function(){var v=this.value.replace(/\D/g,"");if(v!==this.value)this.value=v});
+function submitQ(){var n=parseInt($("qin").value,10);if(!(n>=1&&n<=COUNT)){$("qerr").textContent="1~"+COUNT+" 사이의 문제 번호를 입력하세요.";$("qin").select();return}closeOv("qdlg");onLock(n)}
+$("qok").onclick=submitQ;
+$("qin").addEventListener("keydown",function(e){if(e.key==="Enter")submitQ()});
+$("qno").onclick=function(){closeOv("qdlg")};
+$("qadm").onclick=function(){closeOv("qdlg");openAdm("hint")};
+
+var cf=$("confirm"),pending=0;
+function onLock(n){
+  if(S.viewed.indexOf(n)>-1){openView(n);return}
+  pending=n;$("cmsg").textContent=n+"번 문제의 힌트를 보시겠습니까?";cf.classList.add("on");
+}
+$("cno").onclick=function(){cf.classList.remove("on");pending=0};
+$("cyes").onclick=function(){cf.classList.remove("on");var n=pending;pending=0;if(n)openView(n)};
+
+var vw=$("viewer"),pg=$("pg"),cur=0,page=0;
+function openView(n){cur=n;page=0;vw.classList.add("on");render()}
+function render(){
+  var h=CFG.hints[cur-1];
+  $("vt").textContent="Q."+cur+" · 힌트";
+  if(page===0){
+    pg.innerHTML='<div class="pin"><div class="lb">HINT</div>'+(h.hint?'<p class="exp">'+esc(h.hint)+'</p>':'')+'<div id="himg"></div></div>';
+    var want=cur;
+    imgURL("img_h"+cur).then(function(u){var el=$("himg");if(!el||cur!==want||page!==0)return;
+      if(u)el.innerHTML='<img alt="힌트 이미지" src="'+u+'">';else if(!h.hint)el.innerHTML='<div class="ph">'+cur+'번 힌트가 아직 설정되지 않았습니다</div>'});
+  }else{
+    pg.innerHTML='<div class="pin"><div class="lb">해설</div><p class="exp">'+esc(h.text||"-")+'</p><div id="aimg"></div><div class="lb">정답</div><div class="ans">'+esc(h.answer||"-")+'</div></div>';
+    var wantA=cur;
+    imgURL("img_a"+cur).then(function(u){var el=$("aimg");if(!el||cur!==wantA||page!==1)return;if(u)el.innerHTML='<img alt="해설 이미지" src="'+u+'">'});
+    if(S.viewed.indexOf(cur)<0){S.viewed.push(cur);save();paint()}
+  }
+  $("dots").textContent=(page+1)+" / 2";
+  $("prev").disabled=page===0;
+  $("next").disabled=page===1;
+}
+function go(d){var p=page+d;if(p<0||p>1)return;page=p;render()}
+$("prev").onclick=function(){go(-1)};
+$("next").onclick=function(){go(1)};
+$("vx").onclick=function(){vw.classList.remove("on")};
+var sx=0;
+pg.addEventListener("touchstart",function(e){sx=e.touches[0].clientX},{passive:true});
+pg.addEventListener("touchend",function(e){var dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50)go(dx<0?1:-1)});
+
+/* ===================== 관리자 ===================== */
+var admPurpose="";
+function openAdm(p){admPurpose=p||"";$("ain").value="";$("aerr").textContent="";openOv("adm");setTimeout(function(){$("ain").focus()},100)}
+$("dk3").onclick=function(){openAdm("")};
+$("acn").onclick=function(){closeOv("adm")};
+function submitAdm(){
+  var v=$("ain").value;
+  if(admPurpose==="hint"){
+    if(v===SETUP_CODE){closeOv("adm");openEditor()}else{$("aerr").textContent="코드가 올바르지 않습니다.";$("ain").select()}
+    return;
+  }
+  if(v===RESET_ALL){closeOv("adm");resetAll()}
+  else if(v===SETUP_CODE){closeOv("adm");openEditor()}
+  else{$("aerr").textContent="코드가 올바르지 않습니다.";$("ain").select()}
+}
+$("aok").onclick=submitAdm;
+$("ain").addEventListener("keydown",function(e){if(e.key==="Enter")submitAdm()});
+
+function resetAll(){
+  vw.classList.remove("on");
+  ["qdlg","edt","confirm","adm"].forEach(closeOv);
+  S={start:0,viewed:[],auth:false};save();
+  showRunning();paint();tick();applyAuth();
+}
+
+/* ===================== 문제별 힌트 설정 ===================== */
+var etab=1;
+function openEditor(){$("emsg2").textContent="";openOv("edt");etabs();eload(etab)}
+function etabs(){var h="";for(var i=1;i<=COUNT;i++)h+='<button type="button" data-t="'+i+'" class="'+(i===etab?"on":"")+'">'+i+'</button>';$("etabs").innerHTML=h}
+$("etabs").onclick=function(e){var t=+(e.target.dataset&&e.target.dataset.t);if(!t)return;esave(true);etab=t;$("emsg2").textContent="";etabs();eload(t)};
+function eload(t){
+  var h=CFG.hints[t-1],key="img_h"+t;
+  $("eform").innerHTML='<label>Q.'+t+' 힌트 내용<textarea id="e_hint" placeholder="힌트 1페이지에 보일 내용">'+esc(h.hint)+'</textarea></label>'
+    +'<label>힌트 이미지 첨부 (1페이지)<input type="file" id="e_img" accept="image/*"></label><div class="eprev" id="e_prev"></div>'
+    +'<label>해설 (2페이지)<textarea id="e_text" placeholder="힌트 2페이지 해설">'+esc(h.text)+'</textarea></label>'
+    +'<label>해설 이미지 첨부 (2페이지)<input type="file" id="e_aimg" accept="image/*"></label><div class="eprev" id="e_aprev"></div>'
+    +'<label>정답<input id="e_ans" autocomplete="off" value="'+esc(h.answer)+'"></label>';
+  var ka="img_a"+t;
+  eprev(key,"e_prev");eprev(ka,"e_aprev");
+  function bind(inp,k,box){$(inp).onchange=function(ev){var file=ev.target.files[0];if(!file)return;idbPut(k,file).then(function(){dropImg(k);eprev(k,box);$("emsg2").textContent="이미지가 저장되었습니다."})}}
+  bind("e_img",key,"e_prev");bind("e_aimg",ka,"e_aprev");
+}
+function eprev(key,box){imgURL(key).then(function(u){var p=$(box);if(!p)return;
+  p.innerHTML=u?'<img alt="" src="'+u+'"><button type="button" class="e_del">이미지 삭제</button>':'<span>첨부된 이미지 없음</span>';
+  var d=p.querySelector(".e_del");if(d)d.onclick=function(){idbPut(key,null).then(function(){dropImg(key);eprev(key,box)})}})}
+function esave(quiet){
+  if(!$("e_hint"))return;var h=CFG.hints[etab-1];
+  h.hint=$("e_hint").value;h.text=$("e_text").value;h.answer=$("e_ans").value.trim();
+  saveCfg();if(!quiet)$("emsg2").textContent="Q."+etab+" 설정이 저장되었습니다."}
+$("esave").onclick=function(){esave(false)};
+$("ex2").onclick=function(){esave(true);closeOv("edt")};
+</script>
+</body>
+</html>
